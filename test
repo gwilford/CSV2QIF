@@ -1,0 +1,83 @@
+#!/opt/local/bin/perl -w
+
+use Finance::QIF;
+use strict;
+
+# Fund    Contribution Type       Date of Transaction     Status  Source  Amount   Price   Units
+
+my $somefile = 'test.qif';
+my $infile = "PruAVCs";
+
+open (IN, "<$infile") or die $!;
+
+my $out = Finance::QIF->new( file => ">" . $somefile, );
+
+my %monthy = ( jan => '01', feb => '02', mar => '03', apr => '04', may => '05', jun => '06', jul => '07', 
+               aug => '08', sep => '09', oct => '10', nov => '11', dec => '12');
+
+# header
+print $_ = <IN>;
+# data
+while (<IN>) {
+	s/£\s*//g;
+	unless (m/([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t\n]+)/) {
+		print "FAIL: " . $_;
+		next;
+	}
+#	print "$1:$2:$3:$4:$5:$6:$7:$8\n";
+	my $security = $1;
+	my $memo = $2;
+	my $date = $3;
+	my $status = ($4 eq "Investment" ? "BuyXfr" : "Sell" );
+	my $description = $5;
+	my $amount = $6;
+	my $price = $7;
+	my $quantity = $8;
+	my $commission = '';
+
+	$date =~ /(\d{2})\s+(\w{3})\s+(\d{4})/;
+	my $day = $1;
+        my $mon = $monthy{lc($2)};
+	my $year = $3;
+	
+	if ($description eq "AMC") {
+		$commission = $amount;
+		$amount = 0;
+	}
+		
+	my $record = {
+	    header      => "Type:Invst",
+	    date        => $year . '/' . $mon .'/' . $day,
+	    action      => 'none',
+	    security    => $security,
+	    price       => $price,
+	    quantity    => $quantity,
+	    status      => $status,
+	    text        => $description,
+	    memo        => $memo,
+#	    transaction => "-20.00",
+	    commission  => $commission,
+	    amount      => $amount,
+#	    total       => "",
+	};
+	$out->header( $record->{header} );
+	$out->write($record);
+
+	next;
+
+	next unless ($description eq "AMC");
+	# need an expense too
+	$record = {
+	    header      => "Type:Cash",
+	    date        => $year . '/' . $mon .'/' . $day,
+	    category    => 'Investment:Trading Commission',
+	    status      => 'C',
+	    text        => $description,
+	    memo        => $memo,
+	    transaction => $amount,
+	};
+	$out->header( $record->{header} );
+	$out->write($record);
+}
+$out->close;
+close IN;
