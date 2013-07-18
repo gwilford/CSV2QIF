@@ -8,12 +8,14 @@ use strict;
 my $somefile = 'test.qif';
 my $infile = "PruAVCs";
 
+my %monthy = ( jan => '01', feb => '02', mar => '03', apr => '04', may => '05', jun => '06', jul => '07', 
+               aug => '08', sep => '09', oct => '10', nov => '11', dec => '12');
+
 open (IN, "<$infile") or die $!;
 
 my $out = Finance::QIF->new( file => ">" . $somefile, );
-
-my %monthy = ( jan => '01', feb => '02', mar => '03', apr => '04', may => '05', jun => '06', jul => '07', 
-               aug => '08', sep => '09', oct => '10', nov => '11', dec => '12');
+my $header = "Type:Invst";
+$out->header( $header );
 
 # header
 print $_ = <IN>;
@@ -28,12 +30,12 @@ while (<IN>) {
 	my $security = $1;
 	my $memo = $2;
 	my $date = $3;
-	my $status = ($4 eq "Investment" ? "BuyXfr" : "Sell" );
+	my $status = ($4 eq "Investment" ? "BuyX" : "Sell" );
 	my $description = $5;
 	my $amount = $6;
 	my $price = $7;
 	my $quantity = $8;
-	my $commission = '';
+	my $commission = 0;
 
 	$date =~ /(\d{2})\s+(\w{3})\s+(\d{4})/;
 	my $day = $1;
@@ -41,26 +43,26 @@ while (<IN>) {
 	my $year = $3;
 	
 	if ($description eq "AMC") {
+		# no positive cashflow just a full expense
 		$commission = $amount;
 		$amount = 0;
 	}
 		
 	my $record = {
-	    header      => "Type:Invst",
+	    header      => $header,
 	    date        => $year . '/' . $mon .'/' . $day,
-	    action      => 'none',
+	    action      => $status,
 	    security    => $security,
 	    price       => $price,
 	    quantity    => $quantity,
-	    status      => $status,
+#	    status      => $status,
 	    text        => $description,
 	    memo        => $memo,
-#	    transaction => "-20.00",
 	    commission  => $commission,
-	    amount      => $amount,
-#	    total       => "",
+#	    amount      => $amount,
+	    total       => $amount,
+	    transaction => $amount,
 	};
-	$out->header( $record->{header} );
 	$out->write($record);
 
 	next;
