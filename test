@@ -56,7 +56,7 @@ while (<IN>) {
 	    price       => $price,
 	    quantity    => $quantity,
 #	    status      => $status,
-	    text        => $description,
+#	    text        => $description,
 	    memo        => $memo,
 	    commission  => $commission,
 #	    amount      => $amount,
@@ -65,20 +65,19 @@ while (<IN>) {
 	};
 	$out->write($record);
 
-	next;
+#	next;
 
 	next unless ($description eq "AMC");
 	# need an expense too
 	$record = {
-	    header      => "Type:Cash",
+	    header      => $header,
 	    date        => $year . '/' . $mon .'/' . $day,
-	    category    => 'Investment:Trading Commission',
-	    status      => 'C',
-	    text        => $description,
-	    memo        => $memo,
-	    transaction => $amount,
+	    action      => 'MiscExp',
+	    security    => $security,
+	    total => $commission,
+	    amount => $commission,
+	    commission => $amount,
 	};
-	$out->header( $record->{header} );
 	$out->write($record);
 }
 $out->close;
