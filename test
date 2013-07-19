@@ -1,9 +1,7 @@
 #!/opt/local/bin/perl -w
 
-use Finance::QIF;
 use strict;
-
-# Fund    Contribution Type       Date of Transaction     Status  Source  Amount   Price   Units
+use Finance::QIF;
 
 my $somefile = 'test.qif';
 my $infile = "PruAVCs";
@@ -17,67 +15,76 @@ my $out = Finance::QIF->new( file => ">" . $somefile, );
 my $header = "Type:Invst";
 $out->header( $header );
 
-# header
+# dispose of header
 print $_ = <IN>;
 # data
 while (<IN>) {
+	# strip out currency symbol
 	s/£\s*//g;
 	unless (m/([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t\n]+)/) {
 		print "FAIL: " . $_;
 		next;
 	}
-#	print "$1:$2:$3:$4:$5:$6:$7:$8\n";
-	my $security = $1;
-	my $memo = $2;
-	my $date = $3;
-	my $status = ($4 eq "Investment" ? "BuyX" : "Sell" );
+	my $record = {};
+
+	$record->{header} = $header;
+	$record->{security} = $1;
+	$record->{memo} = $2;
+#	my $status = ($4 eq "Investment" ? "BuyX" : "Sell" );
 	my $description = $5;
-	my $amount = $6;
-	my $price = $7;
-	my $quantity = $8;
-	my $commission = 0;
+	$record->{amount} = $record->{total} = $record->{transaction} = $6;
+	$record->{price} = $7;
+	$record->{quantity} = $8;
+	$record->{commission} = 0;
+
+	my $date = $3;
+
+	if ($4 eq "Investment") {
+		$record->{action} = "BuyX";
+		$record->{account} = 'Salary:Paycheque';
+	} else {
+		$record->{action} =  "Sell";
+	}
 
 	$date =~ /(\d{2})\s+(\w{3})\s+(\d{4})/;
-	my $day = $1;
-        my $mon = $monthy{lc($2)};
-	my $year = $3;
-	
-	if ($description eq "AMC") {
-		# no positive cashflow just a full expense
-		$commission = $amount;
-		$amount = 0;
-	}
-		
-	my $record = {
-	    header      => $header,
-	    date        => $year . '/' . $mon .'/' . $day,
-	    action      => $status,
-	    security    => $security,
-	    price       => $price,
-	    quantity    => $quantity,
-#	    status      => $status,
-#	    text        => $description,
-	    memo        => $memo,
-	    commission  => $commission,
-#	    amount      => $amount,
-	    total       => $amount,
-	    transaction => $amount,
-	};
-	$out->write($record);
+	$record->{date} = $3 . '/' . $monthy{lc($2)} . '/' . $1;
 
-#	next;
+	
+#	my $record = {
+#	    header      => $header,
+#	    date        => $qifdate,
+#	    action      => $status,
+#	    security    => $security,
+#	    price       => $price,
+#	    quantity    => $quantity,
+##	    status      => $status,
+##	    text        => $description,
+#	    memo        => $memo,
+#	    commission  => $commission,
+#	    amount      => $amount,
+#	    total       => $amount,
+#	    transaction => $amount,
+#	    account	=> $account,
+#	};
+	$out->write($record);
 
 	next unless ($description eq "AMC");
 	# need an expense too
-	$record = {
-	    header      => $header,
-	    date        => $year . '/' . $mon .'/' . $day,
-	    action      => 'MiscExp',
-	    security    => $security,
-	    total => $commission,
-	    amount => $commission,
-	    commission => $amount,
-	};
+#	$record = {
+#	    header      => $header,
+#	    date        => $qifdate,
+#	    action      => 'MiscExp',
+#	    memo        => $description,
+#	    security    => $security,
+#	    price       => $price,
+#	    total => $amount,
+#	    amount => $amount,
+#	    commission => $commission,
+#	};
+	$record->{action} = 'MiscExp';
+	$record->{memo} = $description;
+	$record->{account} = 'Investment:AMC';
+#	delete $record->{quantity};
 	$out->write($record);
 }
 $out->close;
