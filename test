@@ -26,19 +26,17 @@ while (<IN>) {
 		next;
 	}
 	my $record = {};
-
 	$record->{header} = $header;
 	$record->{security} = $1;
 	$record->{memo} = $2;
-#	my $status = ($4 eq "Investment" ? "BuyX" : "Sell" );
+	my $date = $3;
 	my $description = $5;
 	$record->{amount} = $record->{total} = $record->{transaction} = $6;
 	$record->{price} = $7;
 	$record->{quantity} = $8;
 	$record->{commission} = 0;
 
-	my $date = $3;
-
+	# decipher the action
 	if ($4 eq "Investment") {
 		$record->{action} = "BuyX";
 		$record->{account} = 'Salary:Paycheque';
@@ -46,46 +44,21 @@ while (<IN>) {
 		$record->{action} =  "Sell";
 	}
 
+	# translate the date
 	$date =~ /(\d{2})\s+(\w{3})\s+(\d{4})/;
 	$record->{date} = $3 . '/' . $monthy{lc($2)} . '/' . $1;
 
-	
-#	my $record = {
-#	    header      => $header,
-#	    date        => $qifdate,
-#	    action      => $status,
-#	    security    => $security,
-#	    price       => $price,
-#	    quantity    => $quantity,
-##	    status      => $status,
-##	    text        => $description,
-#	    memo        => $memo,
-#	    commission  => $commission,
-#	    amount      => $amount,
-#	    total       => $amount,
-#	    transaction => $amount,
-#	    account	=> $account,
-#	};
+	# record the fund transaction
 	$out->write($record);
 
-	next unless ($description eq "AMC");
-	# need an expense too
-#	$record = {
-#	    header      => $header,
-#	    date        => $qifdate,
-#	    action      => 'MiscExp',
-#	    memo        => $description,
-#	    security    => $security,
-#	    price       => $price,
-#	    total => $amount,
-#	    amount => $amount,
-#	    commission => $commission,
-#	};
-	$record->{action} = 'MiscExp';
-	$record->{memo} = $description;
-	$record->{account} = 'Investment:AMC';
-#	delete $record->{quantity};
-	$out->write($record);
+	if ($description eq "AMC") {
+		# need an expense too
+		$record->{action} = 'MiscExp';
+		$record->{memo} = $description;
+		$record->{account} = 'Investment:AMC';
+		# record the expense transaction
+		$out->write($record);
+	}
 }
 $out->close;
 close IN;
