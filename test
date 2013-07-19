@@ -6,14 +6,31 @@ use Finance::QIF;
 my $somefile = 'test.qif';
 my $infile = "PruAVCs";
 
-my %monthy = ( jan => '01', feb => '02', mar => '03', apr => '04', may => '05', jun => '06', jul => '07', 
-               aug => '08', sep => '09', oct => '10', nov => '11', dec => '12');
-
 open (IN, "<$infile") or die $!;
 
-my $out = Finance::QIF->new( file => ">" . $somefile, );
+my $out = Finance::QIF->new(file => ">" . $somefile,);
 my $header = "Type:Invst";
-$out->header( $header );
+$out->header($header);
+
+my %monthy = ( jan => '01', feb => '02', mar => '03', 
+	       apr => '04', may => '05', jun => '06',
+	       jul => '07', aug => '08', sep => '09',
+	       oct => '10', nov => '11', dec => '12');
+
+# action matrix
+my $action = {
+	Investment => "BuyX",
+	Disinvestment => "Sell",
+	Contribution => "BuyX",
+	AMC => "MiscExp",
+};
+
+# account matrix dependent on action/description
+my $account = {
+	BuyX => "Salary:Paycheque",
+	Sell => "",
+	MiscExp => "Investment:AMC",
+};
 
 # dispose of header
 print $_ = <IN>;
@@ -22,41 +39,38 @@ while (<IN>) {
 	# strip out currency symbol
 	s/£\s*//g;
 	unless (m/([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t\n]+)/) {
-		print "FAIL: " . $_;
+		print "Bad record: " . $_;
 		next;
 	}
-	my $record = {};
-	$record->{header} = $header;
-	$record->{security} = $1;
-	$record->{memo} = $2;
+	my $record = {
+		header => $header,
+		security => $1,
+		memo => $2,
+		action => $action->{$4},
+		account => $account->{$action->{$4}},
+		amount => $6,
+		total => $6,
+		transaction => $6,
+		price => $7,
+		quantity => $8,
+		commission => 0,
+	};
 	my $date = $3;
 	my $description = $5;
-	$record->{amount} = $record->{total} = $record->{transaction} = $6;
-	$record->{price} = $7;
-	$record->{quantity} = $8;
-	$record->{commission} = 0;
-
-	# decipher the action
-	if ($4 eq "Investment") {
-		$record->{action} = "BuyX";
-		$record->{account} = 'Salary:Paycheque';
-	} else {
-		$record->{action} =  "Sell";
-	}
 
 	# translate the date
 	$date =~ /(\d{2})\s+(\w{3})\s+(\d{4})/;
 	$record->{date} = $3 . '/' . $monthy{lc($2)} . '/' . $1;
 
-	# record the fund transaction
+	# write out the fund transaction
 	$out->write($record);
 
 	if ($description eq "AMC") {
-		# need an expense too
-		$record->{action} = 'MiscExp';
+		# need an expense too...
+		$record->{action} = $action->{$description};
 		$record->{memo} = $description;
-		$record->{account} = 'Investment:AMC';
-		# record the expense transaction
+		$record->{account} = $account->{$record->{action}};
+		# write out the expense transaction
 		$out->write($record);
 	}
 }
