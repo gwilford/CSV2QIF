@@ -3,12 +3,12 @@
 use strict;
 use Finance::QIF;
 
-my $somefile = 'test.qif';
-my $infile = "PruAVCs";
+my $outfile = 'PruAVCs.qif';
+my $infile = "Data/PruAVCs";
 
 open (IN, "<$infile") or die $!;
 
-my $out = Finance::QIF->new(file => ">" . $somefile,);
+my $out = Finance::QIF->new(file => ">" . $outfile,);
 my $header = "Type:Invst";
 $out->header($header);
 
@@ -33,7 +33,7 @@ my $account = {
 };
 
 # dispose of header
-print $_ = <IN>;
+$_ = <IN>;
 # data
 while (<IN>) {
 	# strip out currency symbol
