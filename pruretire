@@ -23,6 +23,7 @@ my $action = {
 	Investment => "Buy",
 	Disinvestment => "Sell",
 	AMC => "MiscExp",
+	Contribution => "Xfr",
 };
 
 # account matrix dependent on action/description
@@ -90,8 +91,8 @@ while (<IN>) {
 		 $description eq "Contribution") {
 		$total += $record->{amount};
 #		print $total . "\n";
-		$record->{action} = 'Xfr';
-		$record->{memo} = 'AVC payment';
+		$record->{action} = $action->{$description};
+		$record->{memo} = $description;
 		$record->{account} = $account->{$record->{action}};
 		$record->{amount} = $total;
 		delete $record->{security};
