@@ -22,8 +22,6 @@ my %monthy = ( jan => '01', feb => '02', mar => '03',
 my $action = {
 	Investment => "Buy",
 	Disinvestment => "Sell",
-#	Contribution => "Buy",
-#	Switch => "Buy",
 	AMC => "MiscExp",
 };
 
@@ -47,7 +45,6 @@ while (<IN>) {
 		print "Bad record: " . $_;
 		next;
 	}
-#	my @records;
 	my $record = {
 		header => $header,
 		security => $1,
@@ -55,8 +52,6 @@ while (<IN>) {
 		action => $action->{$4},
 		account => $account->{$action->{$4}},
 		amount => $6,
-#		total => $6,
-#		transaction => $6,
 		price => $7,
 		quantity => $8,
 		commission => 0,
@@ -72,14 +67,13 @@ while (<IN>) {
 	if ($total && defined $lastrecord &&
 	    $lastrecord->{date} ne $record->{date}) {
 #		print Dumper($lastrecord);
-		print $lastrecord->{date} . ':' . $total . " (write)\n";
+#		print $total . ' @ ' . $lastrecord->{date} . "\n";
+		# write out consolidated xfr
 	    	$out->write($lastrecord);
 		$total = 0;
 	}
 
 	# write out the fund transaction
-#	push @records, %$record;
-#	print Dumper($record);
 	$out->write($record);
 
 	if ($description eq "AMC") {
@@ -88,7 +82,6 @@ while (<IN>) {
 		$record->{memo} = $description;
 		$record->{account} = $account->{$record->{action}};
 		# write out the expense transaction
-#		push @records, %$record;
 #		print Dumper($record);
 		$out->write($record);
 	# don't need a check for $lastrecord being defined as
@@ -96,48 +89,22 @@ while (<IN>) {
 	} elsif ((!$total || $record->{date} eq $lastrecord->{date}) && 
 		 $description eq "Contribution") {
 		$total += $record->{amount};
-#		$lastdate = $record->{date};
-		print $lastrecord->{date} . ':' . $total . "\n";
-		# write out consolidated xfr
+#		print $total . "\n";
 		$record->{action} = 'Xfr';
 		$record->{memo} = 'AVC payment';
-#		$record->{date} = $lastdate;
 		$record->{account} = $account->{$record->{action}};
 		$record->{amount} = $total;
 		delete $record->{security};
 		delete $record->{price};
 		delete $record->{quantity};
+		# store for next time...
 		$lastrecord = $record;
-#		next;
-
 	}
-#	foreach(@records) {
-#		$out->write($%_);
-#	}
-	if (0 && $total) {
-		# write out consolidated xfr
-		$record->{action} = 'Xfr';
-		$record->{memo} = 'AVC payment';
-		$record->{date} = $lastdate;
-		$record->{account} = $account->{$record->{action}};
-		$record->{amount} = $total;
-		delete $record->{security};
-		delete $record->{price};
-		delete $record->{quantity};
-		# write out the expense transaction
-#		push @records, %$record;
-		$out->write($record);
-#		print Dumper($record);
-		print $lastdate . ':' . $total . " (write)\n";
-#		print Dumper($record);
-		$total = 0;
-	}
-	#$lastdate = $record->{date};
 }
 
 # have we changed date after a series of Buy transactions?
 if ($total) {
-	print $lastrecord->{date} . ':' . $total . " (write)\n";
+#	print $lastrecord->{date} . ':' . $total . " (write)\n";
     	$out->write($lastrecord);
 }
 
