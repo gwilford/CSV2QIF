@@ -26,9 +26,9 @@ my $action = {
 	'Investment Regular' => "BuyX",
 	'Re-registration Transfer In' => "BuyX",
 	'Cash Transfer In' => "BuyX",
-	'Tax Reclaim Reinvestment' => "DivReInvest",
-	'Dividend Reinvestment' => "DivReInvest",
-	'Investment Lump Sum' => "Buy",
+	'Tax Reclaim Reinvestment' => "ReinvDiv",
+	'Dividend Reinvestment' => "ReinvDiv",
+	'Investment Lump Sum' => "BuyX",
 };
 
 # account matrix dependent on action/description
@@ -36,12 +36,12 @@ my $account = {
 	'Switch In' => "",
 	Sale => "",
 	'Switch Out' => "",
-	'Investment Regular' => "Investment:Regular",
+	'Investment Regular' => "Investment:Buy",
 	'Re-registration Transfer In' => "Investment:Transfer",
 	'Cash Transfer In' => "Investment:Transfer",
 	'Tax Reclaim Reinvestment' => "Investment:Tax-reclaim",
 	'Dividend Reinvestment' => "Investment:Dividends",
-	'Investment Lump Sum' => "",
+	'Investment Lump Sum' => "Investment:Buy",
 };
 
 # dispose of header
@@ -62,7 +62,6 @@ while (<IN>) {
 		security => $1,
 		date => $2,
 		memo => $3,
-		text => $3,
 		action => $action->{$3},
 		account => $account->{$3},
 		quantity => $8,
