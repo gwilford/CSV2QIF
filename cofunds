@@ -4,12 +4,7 @@ use strict;
 use Finance::QIF;
 use Data::Dumper;
 
-my $outfile = 'CofundsWilf.qif';
-my $infile = "Data/Cofunds-Wilf";
-
-open (IN, "<$infile") or die $!;
-
-my $out = Finance::QIF->new(file => ">" . $outfile,);
+my $out = Finance::QIF->new(file => ">-",);
 my $header = "Type:Invst";
 $out->header($header);
 
@@ -45,9 +40,9 @@ my $account = {
 };
 
 # dispose of header
-$_ = <IN>;
+$_ = <STDIN>;
 # data
-while (<IN>) {
+while (<STDIN>) {
 	# strip out currency symbol
 	s/,//g;
 # Holding	Date	Description	In (GBP)	Out (GBP)	Price date	Price(p)	Units/Shares	Int charge (GBP)
@@ -89,4 +84,3 @@ while (<IN>) {
 }
 
 $out->close;
-close IN;

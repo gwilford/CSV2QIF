@@ -4,12 +4,7 @@ use strict;
 use Finance::QIF;
 use Data::Dumper;
 
-my $outfile = 'PruAVCs.qif';
-my $infile = "Data/PruAVCs-all";
-
-open (IN, "<$infile") or die $!;
-
-my $out = Finance::QIF->new(file => ">" . $outfile,);
+my $out = Finance::QIF->new(file => ">-",);
 my $header = "Type:Invst";
 $out->header($header);
 
@@ -37,9 +32,9 @@ my $account = {
 my ($total, $lastdate, $lastrecord) = (0,'none', undef);
 
 # dispose of header
-$_ = <IN>;
+$_ = <STDIN>;
 # data
-while (<IN>) {
+while (<STDIN>) {
 	# strip out currency symbol
 	s/£\s*//g;
 	unless (m/([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t\n]+)/) {
@@ -110,4 +105,3 @@ if ($total) {
 }
 
 $out->close;
-close IN;
