@@ -1,0 +1,86 @@
+#!/opt/local/bin/perl -w
+
+use strict;
+use Finance::QIF;
+use Data::Dumper;
+
+my $outfile = 'CofundsWilf.qif';
+my $infile = "Data/Cofunds-Wilf";
+
+open (IN, "<$infile") or die $!;
+
+my $out = Finance::QIF->new(file => ">" . $outfile,);
+my $header = "Type:Invst";
+$out->header($header);
+
+my %monthy = ( jan => '01', feb => '02', mar => '03', 
+	       apr => '04', may => '05', jun => '06',
+	       jul => '07', aug => '08', sep => '09',
+	       oct => '10', nov => '11', dec => '12');
+
+# action matrix
+my $action = {
+	'Switch In' => "Buy",
+	Sale => "Sell",
+	'Switch Out' => "Sell",
+	'Investment Regular' => "BuyX",
+	'Re-registration Transfer In' => "BuyX",
+	'Cash Transfer In' => "BuyX",
+	'Tax Reclaim Reinvestment' => "DivReInvest",
+	'Dividend Reinvestment' => "DivReInvest",
+	'Investment Lump Sum' => "Buy",
+};
+
+# account matrix dependent on action/description
+my $account = {
+	'Switch In' => "",
+	Sale => "",
+	'Switch Out' => "",
+	'Investment Regular' => "Investment:Regular",
+	'Re-registration Transfer In' => "Investment:Transfer",
+	'Cash Transfer In' => "Investment:Transfer",
+	'Tax Reclaim Reinvestment' => "Investment:Tax-reclaim",
+	'Dividend Reinvestment' => "Investment:Dividends",
+	'Investment Lump Sum' => "",
+};
+
+# dispose of header
+$_ = <IN>;
+# data
+while (<IN>) {
+	# strip out currency symbol
+	s/,//g;
+# Holding	Date	Description	In (GBP)	Out (GBP)	Price date	Price(p)	Units/Shares	Int charge (GBP)
+	#unless (m/([^\t]+)\t+([^\t]+)\t+([^\t]+)\t+([^\t]+)\t+([^\t]+)\t+([^\t]+)\t+([^\t]+)\t+([^\t\n]+)/) {
+	unless (m/([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t\n]+)/) {
+#	unless (m/(?:([^\t]*)\t){8}([^\t\n]+)/) {
+		print "Bad record: " . $_;
+		next;
+	}
+	my $record = {
+		header => $header,
+		security => $1,
+		date => $2,
+		memo => $3,
+		text => $3,
+		action => $action->{$3},
+		account => $account->{$3},
+		price => $7,
+		quantity => $8,
+		commission => $9,
+	};
+
+	# sort out the cash value
+	if ($3 eq "Re-registration Transfer In") {
+		$record->{amount} = $7 * $8;
+	} else {
+		$record->{amount} = $4 ? $4 : -$5;
+	}
+		
+	# write out the fund transaction
+#	print Dumper($record);
+	$out->write($record);
+}
+
+$out->close;
+close IN;
