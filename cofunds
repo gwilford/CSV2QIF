@@ -65,18 +65,24 @@ while (<IN>) {
 		text => $3,
 		action => $action->{$3},
 		account => $account->{$3},
-		price => $7,
 		quantity => $8,
 		commission => $9,
 	};
 
-	# sort out the cash value
+	# sort out the transaction amount
 	if ($3 eq "Re-registration Transfer In") {
 		$record->{amount} = $7 * $8;
 	} else {
-		$record->{amount} = $4 ? $4 : -$5;
+		$record->{amount} = $4 ? $4 : $5;
 	}
 		
+	# sort out the cash reserve
+	if ($1 eq "Cash Reserve") {
+		$record->{price} = 1;
+	} else {
+		# convert GBP to pence
+		$record->{price} = $7 / 100;
+	}
 	# write out the fund transaction
 #	print Dumper($record);
 	$out->write($record);
