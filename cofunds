@@ -35,7 +35,8 @@ my $account = {
 	'Re-registration Transfer In' => "Investment:Transfer",
 	'Cash Transfer In' => "Investment:Transfer",
 	'Tax Reclaim Reinvestment' => "Investment:Tax-reclaim",
-	'Dividend Reinvestment' => "Investment:Dividends",
+	#'Dividend Reinvestment' => "Investment:Dividends",
+	'Dividend Reinvestment' => "",
 	'Investment Lump Sum' => "Investment:Buy",
 };
 
