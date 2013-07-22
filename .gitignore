@@ -2,3 +2,4 @@
 *.qif
 *.QIF
 Data
+.DS_Store
