@@ -1,0 +1,92 @@
+#!/opt/local/bin/perl -w
+
+use strict;
+use Finance::QIF;
+use Data::Dumper;
+
+my $out = Finance::QIF->new(file => ">-",);
+my $header = "Type:Invst";
+$out->header($header);
+
+my %monthy = ( jan => '01', feb => '02', mar => '03', 
+	       apr => '04', may => '05', jun => '06',
+	       jul => '07', aug => '08', sep => '09',
+	       oct => '10', nov => '11', dec => '12');
+
+# action matrix
+my $action = {
+	'Switch In' => "Buy",
+	'Switched In' => "Buy",
+	Sale => "Sell",
+	'Switch Out' => "Sell",
+	'Switched Out' => "Sell",
+	'Investment Regular' => "BuyX",
+	'Re-registration Transfer In' => "BuyX",
+	'Cash Transfer In' => "BuyX",
+	'Tax Reclaim Reinvestment' => "ReinvDiv",
+	'Dividend Reinvestment' => "ReinvDiv",
+	'Investment Lump Sum' => "BuyX",
+	'Your single contribution' => "BuyX",
+	'Management Charge' => "MiscExp",
+};
+
+# account matrix dependent on action/description
+my $account = {
+	'Switch In' => "",
+	'Switched In' => "",
+	Sale => "",
+	'Switch Out' => "",
+	'Switched Out' => "",
+	'Investment Regular' => "Investment:Buy",
+	'Re-registration Transfer In' => "Investment:Transfer",
+	'Cash Transfer In' => "Investment:Transfer",
+	'Tax Reclaim Reinvestment' => "Investment:Tax-reclaim",
+	#'Dividend Reinvestment' => "Investment:Dividends",
+	'Dividend Reinvestment' => "",
+	'Investment Lump Sum' => "Investment:Buy",
+	'Your single contribution' => "Investment:Buy",
+	'Management Charge' => "Investment:AMC",
+};
+
+my $lastrecord = undef;
+
+# dispose of header
+$_ = <STDIN>;
+# data
+while (<STDIN>) {
+	# strip out currency symbol
+	#s/,//g;
+# DATE,ACTION,PAYMENTS(£IN),(£OUT),UNIT INVESTMENTS(£),FUND NAME,UNITS(bought),(sold),PRICE PER UNIT(p)
+	unless (m/^([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^\n]+)/) {
+		print STDERR "Bad record: " . $_;
+		next;
+	}
+
+	my $record = {
+		header => $header,
+		security => $6,
+		memo => $2 ? $2 : $lastrecord->{memo},
+		action => $2 ? $action->{$2} : $lastrecord->{action},
+		account => $2 ? $account->{$2} : $lastrecord->{account},
+		quantity => $7 ne "0.000" ? $7 : $8,
+		price => $9,
+		commission => 0,
+	};
+
+	if ($1) {
+		$1 =~ /(\d{2})\s+(\w{3})\s+(\d{4})/;
+		$record->{date} = $1 . '/' . $monthy{lc($2)} . '/' . $3;
+	} else {
+		$record->{date} = $lastrecord->{date};
+	}
+
+	# sort out the transaction amount
+	$record->{amount} = $record->{price} * $record->{quantity};
+
+	# write out the fund transaction
+	print Dumper($record);
+	$out->write($record);
+	$lastrecord = $record;
+}
+
+$out->close;
