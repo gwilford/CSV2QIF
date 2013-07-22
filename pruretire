@@ -55,9 +55,9 @@ while (<STDIN>) {
 	my $date = $3;
 	my $description = $5;
 
-	# translate the date
+	# translate the date into DDMMYY
 	$date =~ /(\d{2})\s+(\w{3})\s+(\d{4})/;
-	$record->{date} = $3 . '/' . $monthy{lc($2)} . '/' . $1;
+	$record->{date} = $1 . '/' . $monthy{lc($2)} . '/' . $3;
 
 	# have we changed date after a series of Buy transactions?
 	if ($total && defined $lastrecord &&
