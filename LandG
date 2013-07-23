@@ -28,6 +28,7 @@ my $action = {
 	'Investment Lump Sum' => "BuyX",
 	'Your single contribution' => "BuyX",
 	'Management Charge' => "MiscExp",
+	'Management Charge' => "Sell",
 };
 
 # account matrix dependent on action/description
@@ -46,6 +47,7 @@ my $account = {
 	'Investment Lump Sum' => "Investment:Buy",
 	'Your single contribution' => "Investment:Buy",
 	'Management Charge' => "Investment:AMC",
+	'Management Charge' => "",
 };
 
 my $lastrecord = undef;
@@ -87,6 +89,17 @@ while (<STDIN>) {
 	print Dumper($record);
 	$out->write($record);
 	$lastrecord = $record;
+
+	# need a copy to avoid breaking $lastrecord
+	if ($record->{memo} eq "Management Charge") {
+		my $exprecord = { %$record };
+		# need an expense too...
+		$exprecord->{action} = 'MiscExp';
+		$exprecord->{account} = 'Investment:AMC';
+		# write out the expense transaction
+#		print Dumper($record);
+		$out->write($exprecord);
+	}
 }
 
 $out->close;
