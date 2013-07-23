@@ -71,7 +71,7 @@ while (<STDIN>) {
 		action => $2 ? $action->{$2} : $lastrecord->{action},
 		account => $2 ? $account->{$2} : $lastrecord->{account},
 		quantity => $7 ne "0.000" ? $7 : $8,
-		price => $9,
+		price => $9 / 100,
 		commission => 0,
 	};
 
