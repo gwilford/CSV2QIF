@@ -15,38 +15,17 @@ my %monthy = ( jan => '01', feb => '02', mar => '03',
 
 # action matrix
 my $action = {
-	'Switch In' => "Buy",
 	'Switched In' => "Buy",
-	Sale => "Sell",
-	'Switch Out' => "Sell",
 	'Switched Out' => "Sell",
-	'Investment Regular' => "BuyX",
-	'Re-registration Transfer In' => "BuyX",
-	'Cash Transfer In' => "BuyX",
-	'Tax Reclaim Reinvestment' => "ReinvDiv",
-	'Dividend Reinvestment' => "ReinvDiv",
-	'Investment Lump Sum' => "BuyX",
 	'Your single contribution' => "BuyX",
-	'Management Charge' => "MiscExp",
 	'Management Charge' => "Sell",
 };
 
 # account matrix dependent on action/description
 my $account = {
-	'Switch In' => "",
 	'Switched In' => "",
-	Sale => "",
-	'Switch Out' => "",
 	'Switched Out' => "",
-	'Investment Regular' => "Investment:Buy",
-	'Re-registration Transfer In' => "Investment:Transfer",
-	'Cash Transfer In' => "Investment:Transfer",
-	'Tax Reclaim Reinvestment' => "Investment:Tax-reclaim",
-	#'Dividend Reinvestment' => "Investment:Dividends",
-	'Dividend Reinvestment' => "",
-	'Investment Lump Sum' => "Investment:Buy",
 	'Your single contribution' => "Investment:Buy",
-	'Management Charge' => "Investment:AMC",
 	'Management Charge' => "",
 };
 
@@ -83,10 +62,11 @@ while (<STDIN>) {
 	}
 
 	# sort out the transaction amount
+	# better to do this than create a split for multiple management charges
 	$record->{amount} = $record->{price} * $record->{quantity};
 
 	# write out the fund transaction
-	print Dumper($record);
+	#print Dumper($record);
 	$out->write($record);
 	$lastrecord = $record;
 
