@@ -8,11 +8,6 @@ my $out = Finance::QIF->new(file => ">-",);
 my $header = "Type:Invst";
 $out->header($header);
 
-my %monthy = ( jan => '01', feb => '02', mar => '03', 
-	       apr => '04', may => '05', jun => '06',
-	       jul => '07', aug => '08', sep => '09',
-	       oct => '10', nov => '11', dec => '12');
-
 # action matrix
 my $action = {
 	'Switch In' => "Buy",
@@ -51,16 +46,14 @@ $_ = <STDIN>;
 while (<STDIN>) {
 	# strip out currency symbol
 	s/,//g;
-# Holding	Date	Description	In (GBP)	Out (GBP)	Price date	Price(p)	Units/Shares	Int charge (GBP)
 	#unless (m/([^\t]+)\t+([^\t]+)\t+([^\t]+)\t+([^\t]+)\t+([^\t]+)\t+([^\t]+)\t+([^\t]+)\t+([^\t\n]+)/) {
 	unless (m/([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t\n]+)/) {
 #	unless (m/(?:([^\t]*)\t){8}([^\t\n]+)/) {
-		print "Bad record: " . $_;
+		print STDERR "Bad record: " . $_;
 		next;
 	}
 	my $record = {
 		header => $header,
-#		security => $1,
 		date => $2,
 		memo => $3,
 		action => $action->{$3},
