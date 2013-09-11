@@ -1,0 +1,41 @@
+#!/opt/local/bin/perl -w
+
+use strict;
+use Finance::QIF;
+
+my $out = Finance::QIF->new(file => ">-",);
+my $header = "Type:Invst";
+$out->header($header);
+
+# action matrix
+my $action = {
+	'Bought' => "Buy",
+};
+
+# dispose of header
+$_ = <STDIN>;
+# data
+while (<STDIN>) {
+	# strip out quotes
+	s/\"//g;
+	# "Account","Date","Transaction","Quantity","Description","Costs","Reference"
+	unless (m/([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,\n]+)/) {
+		print STDERR "Bad record: " . $_;
+		next;
+	}
+	my $record = {
+		header => $header,
+		security => $5,
+		date => $2,
+		memo => $7,
+		action => $action->{$3},
+		quantity => $4,
+		commission => 0,
+		amount => $6,
+		price => $6 / $4,
+	};
+
+	$out->write($record);
+}
+
+$out->close;
