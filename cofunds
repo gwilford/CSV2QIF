@@ -43,7 +43,7 @@ while (<STDIN>) {
 	s/,//g;
 	# Holding	Date	Description	In (GBP)	Out (GBP)	Price date	Price(p)	Units/Shares	Int charge (GBP)
 	#unless (m/([^\t]+)\t+([^\t]+)\t+([^\t]+)\t+([^\t]+)\t+([^\t]+)\t+([^\t]+)\t+([^\t]+)\t+([^\t\n]+)/) {
-	unless (m/([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t\n]+)/) {
+	unless (m/([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t\n]*)/) {
 #	unless (m/(?:([^\t]*)\t){8}([^\t\n]+)/) {
 		print STDERR "Bad record: " . $_;
 		next;
