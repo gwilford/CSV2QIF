@@ -82,19 +82,19 @@ while (<STDIN>) {
 		$out->write($record);
 	# don't need a check for $lastrecord being defined as
 	# only case is when $total = 0 
-	} elsif ((!$total || $record->{date} eq $lastrecord->{date}) && 
-		 $description eq "Contribution") {
-		$total += $record->{amount};
-#		print $total . "\n";
-		$record->{action} = $action->{$description};
-		$record->{memo} = $description;
-		$record->{account} = $account->{$record->{action}};
-		$record->{amount} = $total;
-		delete $record->{security};
-		delete $record->{price};
-		delete $record->{quantity};
-		# store for next time...
-		$lastrecord = $record;
+#	} elsif ((!$total || $record->{date} eq $lastrecord->{date}) && 
+#		 $description eq "Contribution") {
+#		$total += $record->{amount};
+##		print $total . "\n";
+#		$record->{action} = $action->{$description};
+#		$record->{memo} = $description;
+#		$record->{account} = $account->{$record->{action}};
+#		$record->{amount} = $total;
+#		delete $record->{security};
+#		delete $record->{price};
+#		delete $record->{quantity};
+#		# store for next time...
+#		$lastrecord = $record;
 	}
 }
 
