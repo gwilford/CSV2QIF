@@ -1,0 +1,73 @@
+#!/opt/local/bin/perl -w
+
+use strict;
+use Finance::QIF;
+use Data::Dumper;
+
+my $out = Finance::QIF->new(file => ">-",);
+my $header = "Type:Invst";
+$out->header($header);
+
+# action matrix
+my $action = {
+	Regular => ["Xfr","Investment:Initial Holdings"],
+	Single => ["Xfr","Investment:Initial Holdings"],
+	'AMC Adj' => ["Xfr","Investment:AMC Rebate"],
+};
+
+my ($lastaction, $lastdate, $total, $lastrecord) = (undef, 0, 0, undef);
+my $date = '';
+
+# data
+while (<STDIN>) {
+	if (m/^Investment Date : ([^\s]+)/) {
+		$date = $1;
+		next;
+	}
+
+	if (m/^([^\t]+)\t ([\d\.]+)\s+$/) {
+		print STDERR "[$1][$2]\n";
+		$lastaction = $1;
+
+		my $record = {
+			header => $header,
+			#security => $1,
+			memo => $1,
+			action => $action->{$1}[0],
+			account => $action->{$1}[1],
+			amount => $2,
+			#price => $7,
+			#quantity => $8,
+			#commission => 0,
+			date => $date,
+		};
+		$out->write($record);
+		next;
+	}
+
+	#unless (m/^([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t\n]+)/) {
+	#unless (m/^([^\t]+)\t[ ]*([^\t]+)\t[ ]*([^\t]+)\t[ ]*([^\t]+)\t[ ]*([^\t]+)\t[ ]*([^\t]+)\t[ ]*([^\t]+)\t[ ]*([^\t\n]+)/) {
+	unless (m/^([^\t]+)\t\s*([^\t]+)\t\s*([^\t]+)\t\s*([^\t]+)\t\s*([^\t]+)\t\s*([^\t]+)\t\s*([^\t\n]+)/) {
+	#unless (m/^([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t\n]+)/) {
+		next;
+	}
+	print STDERR "[$1][$2][$3][$4][$5][$6]\n";
+	#next;
+
+	my $record = {
+		header => $header,
+		security => $1,
+		memo => $lastaction,
+		action => 'Buy',
+		#account => $account->{$action->{$4}},
+		amount => $2,
+		price => $4/100,
+		quantity => $6,
+		commission => 0,
+		date => $date,
+	};
+
+	$out->write($record);
+}
+
+$out->close;
