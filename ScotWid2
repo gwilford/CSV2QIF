@@ -29,6 +29,8 @@ while (<STDIN>) {
 		print STDERR "[$1][$2]\n";
 		$lastaction = $1;
 
+		next if ($1 eq 'AMC Adj');
+
 		my $record = {
 			header => $header,
 			#security => $1,
@@ -45,10 +47,7 @@ while (<STDIN>) {
 		next;
 	}
 
-	#unless (m/^([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t\n]+)/) {
-	#unless (m/^([^\t]+)\t[ ]*([^\t]+)\t[ ]*([^\t]+)\t[ ]*([^\t]+)\t[ ]*([^\t]+)\t[ ]*([^\t]+)\t[ ]*([^\t]+)\t[ ]*([^\t\n]+)/) {
 	unless (m/^([^\t]+)\t\s*([^\t]+)\t\s*([^\t]+)\t\s*([^\t]+)\t\s*([^\t]+)\t\s*([^\t]+)\t\s*([^\t\n]+)/) {
-	#unless (m/^([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t\n]+)/) {
 		next;
 	}
 	print STDERR "[$1][$2][$3][$4][$5][$6]\n";
@@ -68,6 +67,15 @@ while (<STDIN>) {
 	};
 
 	$out->write($record);
+
+	if ($lastaction eq 'AMC Adj') {
+		#$record->{security} = $lastaction;
+		$record->{account} = $action->{$lastaction}[1],
+		$record->{action} = 'MiscInc';
+		delete $record->{quantity};
+
+		$out->write($record);
+	}
 }
 
 $out->close;
