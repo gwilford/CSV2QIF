@@ -1,0 +1,55 @@
+#!/opt/local/bin/perl -w
+
+use strict;
+use Finance::QIF;
+use Data::Dumper;
+
+my $out = Finance::QIF->new(file => ">-",);
+my $header = "Type:Invst";
+my $security = "USS DB section CV";
+$out->header($header);
+
+my $account = {
+	"Employee contribution" => "Deferred Income:Defined Benefit Scheme",
+	"Employer contribution" => "Deferred Income:Defined Benefit Scheme:Employer",
+};
+
+# dispose of header
+$_ = <STDIN>;
+# data
+while (<STDIN>) {
+	# strip out currency symbol
+	#s/,//g;
+# DATE,Desc,deposit
+	unless (m/^([^,]*),([^,]*),([^\n]+)/) {
+		print STDERR "Bad record: " . $_;
+		next;
+	}
+
+	my $record = {
+		header => $header,
+		date => $1,
+		memo => $2,
+		action => "Xfr",
+		account => $account->{$2},
+		quantity => $3,
+		price => 1,
+		commission => 0,
+	};
+
+	# sort out the transaction amount
+	# better to do this than create a split for multiple management charges
+	$record->{amount} = $record->{price} * $record->{quantity};
+
+	$out->write($record);
+
+	$record->{action} = "Buy";
+	$record->{security} = $security,
+	delete $record->{account};
+
+	# write out the fund transaction
+	#print Dumper($record);
+	$out->write($record);
+}
+
+$out->close;

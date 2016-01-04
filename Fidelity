@@ -1,0 +1,92 @@
+#!/opt/local/bin/perl -w
+
+use strict;
+use Finance::QIF;
+use Data::Dumper;
+
+my $out = Finance::QIF->new(file => ">-",);
+my $header = "Type:Invst";
+$out->header($header);
+
+# action matrix
+my $action = {
+	'Service Fee: Sell' => "MiscExp",
+	'Adviser Ongoing Fee Sell' => "MiscExp",
+	'AMC Rebate' => "MiscInc",
+	'Tax Credit' => "MiscInc",
+	'Reinvested Tax                 : ReInvested Units' => "ReinvDiv",
+	'Switch In' => "Buy",
+	'Monthly Savings' => "Buy",
+	'Switch Out' => "Sell",
+	'Dividend' => "ReinvDiv",
+};
+
+# account matrix dependent on action/description
+my $account = {
+	'Switch In' => "",
+	'Monthly Savings' => "",
+	'Switch Out' => "",
+	'AMC Rebate' => "Investment:AMC Rebate",
+	'Tax Credit' => "Investment",
+	'Service Fee: Sell' => "Financial Charges:AMC",
+	'Adviser Ongoing Fee Sell' => "Financial Charges:AMC",
+	'Reinvested Tax                 : ReInvested Units' => "Investment:Tax-reclaim",
+	'Dividend' => "Investment:Dividends",
+};
+
+sub write_misc_record {
+	my $record = $_[0];
+	$record->{security} = "AMC Cash Transactions";
+	$record->{price} = 1;
+	$record->{quantity} = $record->{amount};
+	$out->write($record);
+}
+
+my $security; # = get_security();
+while (<STDIN>) {
+	# Holding	Date	Description	In (GBP)	Out (GBP)	Price date	Price(p)	Units/Shares	Int charge (GBP)
+	# Account Number,Deal Date,Reference,Gross Transaction Amount,Net Transaction Amount,Initial Charge,Initial Charge As %,Type,Units,Price,Amount,Settlement Currency Code,Status
+	if (m/^Holding,(.+)/) {
+		$security = $1;
+		print STDERR "Security: $security\n";
+		next;
+	}
+	unless (m/([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),/) {
+		print STDERR "Ignoring: " . $_;
+		next;
+	}
+	
+	next if ($8 eq 'Re Registration In'); # no-op
+	next if ($13 eq "Positioned"); # ignore
+
+	die "Error: No action defined for \"$8\"" unless exists($action->{$8});
+	die "Error: No account defined for \"$8\"" unless exists($account->{$8});
+		
+	my $record = {
+		header => $header,
+		security => $security,
+		date => $2,
+		memo => $8,
+		action => $action->{$8},
+		account => $account->{$8},
+		quantity => $9,
+		price => $10 / 100,
+		amount => $11,
+		commission => $4-$11,
+	};
+
+	if ($record->{action} =~ /^Misc(Inc|Exp)$/) {
+		if ($1 eq "Inc") {
+			$record->{action} = "Buy";
+		} else {
+			$record->{action} = "Sell";
+		}
+		$out->write($record);
+		$record->{action} = "Misc$1";
+		write_misc_record($record);
+	} else {
+		$out->write($record);
+	}
+}
+
+$out->close;
