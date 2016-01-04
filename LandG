@@ -39,7 +39,7 @@ while (<STDIN>) {
 	#s/,//g;
 # DATE,ACTION,PAYMENTS(£IN),(£OUT),UNIT INVESTMENTS(£),FUND NAME,UNITS(bought),(sold),PRICE PER UNIT(p)
 	unless (m/^([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^\n]+)/) {
-		print STDERR "Bad record: " . $_;
+		print STDERR "Bad record: " . $_ . "\n";
 		next;
 	}
 
@@ -49,13 +49,14 @@ while (<STDIN>) {
 		memo => $2 ? $2 : $lastrecord->{memo},
 		action => $2 ? $action->{$2} : $lastrecord->{action},
 		account => $2 ? $account->{$2} : $lastrecord->{account},
-		quantity => $7 ne "0.000" ? $7 : $8,
+		quantity => $7 != 0 ? $7 : $8,
 		price => $9 / 100,
 		commission => 0,
 	};
 
 	if ($1) {
-		$1 =~ /(\d{2})\s+(\w{3})\s+(\d{4})/;
+		#$1 =~ /(\d{2})\s+(\w{3})\s+(\d{4})/;
+		$1 =~ /(\d{2})\-(\w{3})\-(\d{4})/;
 		$record->{date} = $1 . '/' . $monthy{lc($2)} . '/' . $3;
 	} else {
 		$record->{date} = $lastrecord->{date};
